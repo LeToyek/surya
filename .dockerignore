@@ -1,0 +1,21 @@
+# .dockerignore
+# Specifies files and directories to ignore when building the Docker image.
+
+# Ignore Docker-related files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Ignore Git-related files
+.git
+.gitignore
+
+# Ignore Node.js dependency directory (it will be installed inside the container)
+node_modules
+
+# Ignore Next.js build cache and output
+.next
+
+# Ignore environment variable files
+.env
+.env.local

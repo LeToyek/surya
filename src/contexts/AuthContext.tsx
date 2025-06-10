@@ -2,35 +2,16 @@
 'use client';
 
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { AuthenticatedUser, Role } from '../types';
-import { useRouter } from 'next/navigation'; // Using next/navigation for App Router
-
-// --- Mock User Data Store (replace with API calls later) ---
-// For simplicity, store users in localStorage. In a real app, this is insecure.
-const MOCK_USERS_DB_KEY = 'mockSolarUsersDB';
-
-const getMockUsers = (): AuthenticatedUser[] => {
-  if (typeof window === 'undefined') return [];
-  const users = localStorage.getItem(MOCK_USERS_DB_KEY);
-  return users ? JSON.parse(users) : [];
-};
-
-const saveMockUsers = (users: AuthenticatedUser[]) => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(MOCK_USERS_DB_KEY, JSON.stringify(users));
-};
-// --- End Mock User Data Store ---
-
+import { AuthenticatedUser } from '../types';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: AuthenticatedUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password_UNUSED: string) => Promise<boolean>; // password_UNUSED for mock
-  logout: () => void;
-  register: (name: string, email: string, password_UNUSED: string, role?: Role) => Promise<boolean>;
-  // Will add admin user creation here for testing
-  createAdminUserIfNotExists: () => void;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,98 +22,79 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // To handle initial auth check
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const createAdminUserIfNotExists = useCallback(() => {
-    const users = getMockUsers();
-    const adminExists = users.some(u => u.email === 'admin@solarschools.dev' && u.role === 'ADMIN');
-    if (!adminExists) {
-      const adminUser: AuthenticatedUser = {
-        id: 'admin001',
-        name: 'Admin User',
-        email: 'admin@solarschools.dev',
-        role: 'ADMIN',
-      };
-      // For mock, password isn't stored/checked, but real registration would hash it.
-      users.push(adminUser);
-      saveMockUsers(users);
-      console.log('Mock admin user created: admin@solarschools.dev');
+  // Check for an active session when the app loads
+  const checkUserSession = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user session:', error);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-
-  // Check for persisted user on mount
   useEffect(() => {
-    setIsLoading(true);
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error("Failed to parse stored user", e);
-          localStorage.removeItem('currentUser');
-        }
+    checkUserSession();
+  }, [checkUserSession]);
+
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUser(data);
+        return { success: true };
       }
-      // Ensure mock admin exists for testing
-      createAdminUserIfNotExists();
+      return { success: false, error: data.error || 'Login failed' };
+    } catch (error) {
+      return { success: false, error: 'An unexpected network error occurred.' };
     }
-    setIsLoading(false);
-  }, [createAdminUserIfNotExists]);
-
-  const login = async (email: string, password_UNUSED: string): Promise<boolean> => {
-    setIsLoading(true);
-    console.log(`Attempting login for: ${email}`); // Mock password validation
-    const users = getMockUsers();
-    const foundUser = users.find(u => u.email === email); // In real app, also check hashed password
-
-    if (foundUser) {
-      setUser(foundUser);
-      console.log("User found:", foundUser,password_UNUSED);
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
-      console.log('Login successful:', foundUser);
-      setIsLoading(false);
-      return true;
-    }
-    console.log('Login failed: User not found or password incorrect (mock).');
-    setIsLoading(false);
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('currentUser');
-    router.push('/login'); // Redirect to login after logout
-    console.log('User logged out.');
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Logout request failed:', error);
+    } finally {
+      setUser(null);
+      router.push('/login');
+    }
   };
 
-  const register = async (name: string, email: string, password_UNUSED: string, role: Role = 'USER'): Promise<boolean> => {
-    setIsLoading(true);
-    const users = getMockUsers();
-    if (users.find(u => u.email === email)) {
-      console.log('Registration failed: Email already exists.');
-      setIsLoading(false);
-      return false; // Email already exists
+  const register = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        return { success: true };
+      }
+      return { success: false, error: data.error || 'Registration failed' };
+    } catch (error) {
+      return { success: false, error: 'An unexpected network error occurred.' };
     }
-    const newUser: AuthenticatedUser = {
-      id: `user-${Date.now()}`, // Simple unique ID
-      name,
-      email,
-      role,
-    };
-    users.push(newUser);
-    saveMockUsers(users);
-    // Optionally log in the user directly after registration
-    // setUser(newUser);
-    // localStorage.setItem('currentUser', JSON.stringify(newUser));
-    console.log('Registration successful:', newUser);
-    setIsLoading(false);
-    return true;
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, register, createAdminUserIfNotExists }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

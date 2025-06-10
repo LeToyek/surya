@@ -12,13 +12,13 @@ const inter = Inter({ subsets: ["latin"] });
 
 // No metadata export from client component directly. Move to a server component if needed or keep in page.tsx
 
-function AppInitializer({ children }: { children: ReactNode }) {
-  const { createAdminUserIfNotExists } = useAuth();
-  useEffect(() => {
-    createAdminUserIfNotExists(); // Ensure admin exists on app load
-  }, [createAdminUserIfNotExists]);
-  return <>{children}</>;
-}
+// function AppInitializer({ children }: { children: ReactNode }) {
+//   const { createAdminUserIfNotExists } = useAuth();
+//   useEffect(() => {
+//     createAdminUserIfNotExists(); // Ensure admin exists on app load
+//   }, [createAdminUserIfNotExists]);
+//   return <>{children}</>;
+// }
 
 
 function ProtectedRoutes({ children }: { children: ReactNode }) {
@@ -71,12 +71,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <AppInitializer> {/* Ensures admin creation logic runs early */}
             <ProtectedRoutes>
                  {/* Navbar and Footer could go here if they are part of every page */}
                 {children}
             </ProtectedRoutes>
-          </AppInitializer>
+          {/* <AppInitializer> 
+          </AppInitializer> */}
         </AuthProvider>
       </body>
     </html>

@@ -1,0 +1,70 @@
+# docker-compose.yml
+# Defines the multi-container Docker application environment.
+
+version: '3.8' # Specifies the Docker Compose file format version.
+
+services:
+  # 1. The PostgreSQL Database Service
+  db:
+    image: postgres:15-alpine # Use the official PostgreSQL 15 image (alpine version is lightweight).
+    container_name: solarschools_db
+    restart: always # Ensures the container restarts if it stops.
+    environment:
+      # These variables are loaded from the .env file.
+      # They configure the database instance.
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      # Maps port 5432 on the host to port 5432 in the container.
+      # Format: "HOST_PORT:CONTAINER_PORT"
+      - "5432:5432"
+    volumes:
+      # Creates a named volume to persist database data even if the container is removed.
+      # This prevents data loss between restarts.
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Checks if the database is ready to accept connections before other services start.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. The Next.js Application Service
+  next-app:
+    container_name: solarschools_app
+    build:
+      # Specifies that Docker should build an image from the Dockerfile in the current directory.
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      # Maps port 3000 on the host to port 3000 in the container (Next.js default port).
+      - "3000:3000"
+    volumes:
+      # Mounts the local src directory into the container's src directory.
+      # This enables hot-reloading during development without rebuilding the image.
+      - ./src:/app/src
+    depends_on:
+      db: # Ensures the 'db' service is healthy before this service starts.
+        condition: service_healthy
+    environment:
+      # Passes the database connection URL from the .env file to the Next.js app.
+      # 'db' is the service name of our PostgreSQL container.
+      DATABASE_URL: ${DATABASE_URL}
+
+  # 3. (Optional) Adminer: A lightweight database management tool
+  adminer:
+    image: adminer # Use the official Adminer image.
+    container_name: solarschools_adminer
+    restart: always
+    ports:
+      # Access Adminer in your browser at http://localhost:8080
+      - "8080:8080"
+    depends_on:
+      db: # Ensures Adminer starts after the database is ready.
+        condition: service_healthy
+
+# Defines the named volume used by the 'db' service for data persistence.
+volumes:
+  postgres_data:
