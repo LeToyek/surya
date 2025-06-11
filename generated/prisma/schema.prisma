@@ -1,0 +1,90 @@
+// prisma/schema.prisma
+
+// 1. Define the data source (PostgreSQL) and the provider.
+// The URL is read from the .env file.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 2. Define the Prisma client generator.
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../generated/prisma"
+  previewFeatures = ["jsonProtocol"] // Example feature, adjust as needed or remove if none are required
+}
+
+// 3. Define the data models for your application.
+
+// Role Enum for RBAC
+enum Role {
+  USER
+  ADMIN
+}
+
+// User Model for Authentication and RBAC
+model User {
+  id        String   @id @default(cuid()) // Unique ID for the user
+  email     String   @unique // User's email, must be unique
+  name      String?
+  password  String // In a real app, this should be a hashed password
+  role      Role     @default(USER) // Default role is USER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  donations Donation[] // A user can have many donations
+}
+
+// School Model for school details and their panel grids
+model School {
+  id          Int     @id @default(autoincrement()) // Auto-incrementing integer ID
+  name        String
+  address     String
+  logo        String?
+  description String?
+  goal        Float
+  funded      Float   @default(0) // The amount funded so far
+
+  // Configuration for the multiple solar panel grids (s x n x m)
+  panelGridConfigs Json @default("[]") // Store the array of PanelGridConfig as JSON
+
+  // A school can have many solar panels
+  solarPanels SolarPanel[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// SolarPanel Model for individual panels in a grid
+model SolarPanel {
+  id     String @id @default(cuid()) // Unique ID for the panel
+  gridId String // ID of the grid section it belongs to (from School.panelGridConfigs)
+  row    Int
+  col    Int
+
+  // Relationship to the School
+  schoolId Int
+  school   School @relation(fields: [schoolId], references: [id])
+
+  // Relationship to a Donation (a panel can have one donation)
+  donationId String?   @unique // A donation is unique to one or more panels
+  donation   Donation? @relation(fields: [donationId], references: [id])
+
+  @@unique([schoolId, gridId, row, col]) // Ensure panel position is unique per school
+}
+
+// Donation Model to track user donations for panels
+model Donation {
+  id     String  @id @default(cuid()) // Unique ID for the donation transaction
+  amount Float
+  logo   String?
+
+  // Relationship to the User who made the donation
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  // A donation can be for one or more panels
+  panels SolarPanel[]
+
+  createdAt DateTime @default(now())
+}

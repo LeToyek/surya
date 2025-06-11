@@ -10,6 +10,7 @@ datasource db {
 // 2. Define the Prisma client generator.
 generator client {
   provider        = "prisma-client-js"
+  output   = "../generated/prisma"
   previewFeatures = ["jsonProtocol"] // Example feature, adjust as needed or remove if none are required
 }
 
