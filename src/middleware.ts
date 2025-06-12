@@ -1,77 +1,76 @@
 // src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import type { AuthenticatedUser } from './types'; // Adjust path if types.ts is not in src
+import type { AuthenticatedUser } from './types'; // Adjust path if needed
 
-// Function to parse the mock user from cookie (or localStorage if accessible, but middleware runs server-side typically)
-// For this example, we'll assume the client sets a simple cookie on login/logout for middleware to check.
-// This is a simplified approach. Real JWTs are usually stored in httpOnly cookies.
-// Alternatively, for client-side routing protection with App Router, you'd use layout checks.
-// But middleware is good for API routes and initial server-side checks.
-
-// For pure client-side mock with localStorage, middleware can't directly access it.
-// So, this middleware example will be more conceptual or would require a cookie.
-// Let's assume on login, we set a cookie 'currentUserRole' and 'isAuthenticatedFlag'.
-
+// This function will run on every matching request before it reaches the page.
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Attempt to get user info (this is tricky with localStorage in middleware)
-  // For a pure client-side mock, most protection logic would be in a top-level client component or layout.
-  // Middleware is more for if you were setting a cookie or header that it can read.
-  // For demonstration, let's pretend we have a way to know the role from cookies.
-  const currentUserCookie = request.cookies.get('currentUser'); // This is how you'd get a cookie
+  // 1. Attempt to get the user data from the 'session' cookie
+  const sessionCookie = request.cookies.get('session');
   let user: AuthenticatedUser | null = null;
-  if (currentUserCookie) {
+
+  if (sessionCookie) {
     try {
-      user = JSON.parse(currentUserCookie.value) as AuthenticatedUser;
-    } catch (e) { console.error("Error parsing user cookie in middleware", e); }
-  }
-
-
-  const isAuthenticated = !!user;
-  const userRole = user?.role || 'PUBLIC';
-
-  // Publicly accessible paths
-  const publicPaths = ['/login', '/register', '/', '/schools']; // Add any other public paths like /schools/[id]
-
-  // Check if current path is a dynamic school detail page
-  const isSchoolDetailPage = /^\/schools\/[^/]+$/.test(pathname);
-
-  if (publicPaths.includes(pathname) || isSchoolDetailPage || pathname.startsWith('/_next/') || pathname.startsWith('/api/') || pathname.includes('.')) {
-    // Allow access to public paths, static files, API routes etc.
-    return NextResponse.next();
-  }
-
-
-  // --- Protection Logic ---
-
-  // If trying to access any protected route and not authenticated, redirect to login
-  if (!isAuthenticated) {
-    console.log(`Middleware: Not authenticated, trying to access ${pathname}. Redirecting to /login.`);
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // Admin route protection
-  if (pathname.startsWith('/admin')) {
-    if (userRole !== 'ADMIN') {
-      console.log(`Middleware: User role ${userRole} trying to access admin path ${pathname}. Redirecting to home.`);
-      // Forbidden or redirect to a "not authorized" page or home
-      return NextResponse.redirect(new URL('/', request.url));
+      // Parse the cookie value to get the user object
+      user = JSON.parse(sessionCookie.value);
+    } catch (e) {
+      console.error("Error parsing session cookie in middleware:", e);
+      // The cookie is malformed, treat the user as logged out.
+      user = null;
     }
   }
 
-  // User-specific routes (e.g., /profile, /my-donations) - can be added later
-  // if (pathname.startsWith('/profile')) {
-  //   if (userRole !== 'USER' && userRole !== 'ADMIN') { // Assuming ADMIN can also view profiles
-  //     return NextResponse.redirect(new URL('/', request.url));
-  //   }
-  // }
+  // 2. Determine authentication status and role
+  const isAuthenticated = !!user;
+  const userRole = user?.role || 'PUBLIC'; // Default to 'PUBLIC' if no user
 
+  // 3. Define public routes that do not require authentication
+  // We use regex for dynamic paths like /schools/[id]
+  const publicPaths = [
+    /^\/$/, // Homepage
+    /^\/login$/,
+    /^\/register$/,
+    /^\/schools(\/[^/]+)?$/, // Matches /schools and /schools/[id]
+    /^\/unauthorized$/,
+  ];
+
+  // 4. Define admin-only routes
+  const adminPaths = [
+    /^\/admin(\/.*)?$/, // Matches /admin and any sub-path like /admin/dashboard
+  ];
+
+  // Allow Next.js internal requests, API routes, and static files to pass through
+  if (pathname.startsWith('/_next') || pathname.startsWith('/api/') || pathname.includes('.')) {
+    return NextResponse.next();
+  }
+
+  // 5. Enforce routing rules
+  const isPublic = publicPaths.some(regex => regex.test(pathname));
+  const isAdminPath = adminPaths.some(regex => regex.test(pathname));
+
+  // If trying to access a protected route and is NOT authenticated, redirect to login
+  if (!isAuthenticated && !isPublic) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname); // Optional: add redirect query
+    console.log(`Middleware: Not authenticated for path ${pathname}. Redirecting to login.`);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // If trying to access an admin-only route and is NOT an admin, redirect to an 'unauthorized' page
+  if (isAdminPath && userRole !== 'ADMIN') {
+    const unauthorizedUrl = new URL('/unauthorized', request.url);
+    console.log(`Middleware: Non-admin user (role: ${userRole}) on admin path ${pathname}. Redirecting to unauthorized.`);
+    return NextResponse.redirect(unauthorizedUrl);
+  }
+
+  // 6. If all checks pass, allow the request to continue
   return NextResponse.next();
 }
 
-// See "Matching Paths" below to learn more
+// Configure the matcher to run the middleware on all routes except for static assets and API calls.
+// This is generally more efficient than running on every single request.
 export const config = {
   matcher: [
     /*
@@ -84,17 +83,3 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };
-
-// IMPORTANT NOTE FOR MOCKING:
-// Middleware runs on the server/edge. It CANNOT directly access `localStorage`.
-// For the above middleware to work with the `localStorage`-based AuthContext,
-// on login, `AuthContext` would also need to set a cookie that the middleware can read.
-// Example in AuthContext login:
-// document.cookie = `currentUser=${JSON.stringify(foundUser)}; path=/; max-age=86400;`; // Set cookie
-// And on logout:
-// document.cookie = 'currentUser=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;'; // Clear cookie
-
-// For now, if you are relying purely on client-side state with localStorage,
-// you'd implement route protection within client components (e.g., in a RootLayout client component
-// or individual page client components checking useAuth()).
-// The middleware example above is structured for when you start using cookies for auth state.

@@ -1,4 +1,7 @@
 // src/types.ts
+
+import { LucideIcon } from "lucide-react";
+
 // src/types.ts
 export interface School {
   id: number;
@@ -67,4 +70,10 @@ export interface AuthenticatedUser {
   role: Role;
   // In a real scenario, you might have an access token here
   // token?: string;
+}
+export interface NavItem {
+  title: string;
+  href: string;
+  icon?: LucideIcon;
+  children?: NavItem[];
 }

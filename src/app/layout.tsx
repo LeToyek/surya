@@ -7,6 +7,7 @@ import { Inter } from "next/font/google";
 import { usePathname, useRouter }
 from "next/navigation";
 import { useEffect, ReactNode } from "react";
+import { ThemeProvider } from './providers';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -72,8 +73,14 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
             <ProtectedRoutes>
-                 {/* Navbar and Footer could go here if they are part of every page */}
-                {children}
+                <ThemeProvider
+                  attribute="class"
+                  defaultTheme="light"
+                  enableSystem
+                  disableTransitionOnChange
+                >
+                  {children}
+                </ThemeProvider>
             </ProtectedRoutes>
           {/* <AppInitializer> 
           </AppInitializer> */}

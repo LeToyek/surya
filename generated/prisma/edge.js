@@ -178,7 +178,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/app/generated/prisma",
+      "value": "D:\\projects\\surya\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -187,18 +187,18 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "linux-musl-openssl-3.0.x",
+        "value": "windows",
         "native": true
       }
     ],
     "previewFeatures": [
       "jsonProtocol"
     ],
-    "sourceFilePath": "/app/prisma/schema.prisma",
+    "sourceFilePath": "D:\\projects\\surya\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
+    "rootEnvPath": "../../.env",
     "schemaEnvPath": "../../.env"
   },
   "relativePath": "../../prisma",
