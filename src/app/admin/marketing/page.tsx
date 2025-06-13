@@ -13,8 +13,6 @@ import {
   UploadCloud,
   FileText,
   XCircle,
-  Link2,
-  Send,
   Mail,
   Building2,
   RefreshCw,
@@ -42,7 +40,6 @@ interface EmailData {
 const MarketingPage = () => {
   // Component State
   const [templateFile, setTemplateFile] = useState<File | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState("");
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
 
   // Data Table State
@@ -80,7 +77,7 @@ const MarketingPage = () => {
       else throw new Error(result.message || "Failed to parse email data");
     } catch (error) {
       console.error("Error fetching all email data:", error);
-      setDataError(error.message || "Failed to load email data.");
+      setDataError("Failed to load email data.");
     } finally {
       setIsLoadingData(false);
     }
@@ -153,7 +150,7 @@ const MarketingPage = () => {
         setActiveFilter("pending");
         resolve(result);
       } catch (error) {
-        setModalError(error.message);
+        setModalError("Failed to add email.");
         reject(error);
       }
     });
@@ -197,51 +194,6 @@ const MarketingPage = () => {
     setTemplateFile(null);
   };
 
-  const handleSubmit = async () => {
-    if (!templateFile || !webhookUrl) {
-      toast.error("Please provide a template file and a webhook URL.");
-      return;
-    }
-    if (
-      !webhookUrl.startsWith("http://") &&
-      !webhookUrl.startsWith("https://")
-    ) {
-      toast.error("Please enter a valid webhook URL.");
-      return;
-    }
-
-    setUploadStatus("uploading");
-    const formData = new FormData();
-    formData.append("file", templateFile);
-
-    const promise = new Promise(async (resolve, reject) => {
-      try {
-        const response = await fetch(webhookUrl, {
-          method: "POST",
-          body: formData,
-        });
-        if (!response.ok) {
-          const errorData = await response
-            .json()
-            .catch(() => ({ message: "An unknown error occurred." }));
-          throw new Error(`Webhook failed: ${errorData.message}`);
-        }
-        await fetchAllEmailData();
-        resolve(response);
-      } catch (error) {
-        reject(error);
-      } finally {
-        setUploadStatus("idle");
-      }
-    });
-
-    toast.promise(promise, {
-      loading: "Sending template to workflow...",
-      success: "Portfolio sent successfully!",
-      error: (err) => err.message || "Failed to send template.",
-    });
-  };
-
   const handleBlastEmails = async (e: FormEvent) => {
     e.preventDefault();
     if (!blastSubject || !blastMessage) {
@@ -276,7 +228,8 @@ const MarketingPage = () => {
       setBlastSubject("");
       setBlastMessage("");
     } catch (error) {
-      toast.error(error.message || "Failed to start the email blast.", {
+      console.error("Error during email blast:", error);
+      toast.error("Failed to start the email blast.", {
         id: toastId,
       });
     }

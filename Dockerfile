@@ -1,40 +1,27 @@
 # Dockerfile
-# Instructions for building the Next.js application image.
-
-# Stage 1: Base dependencies
-# Use an official Node.js image. Alpine versions are smaller.
-FROM node:18-alpine AS base
+# Stage 1: Install dependencies
+FROM node:18-alpine AS deps
 WORKDIR /app
-
-# Install dependencies needed for some native Node.js modules.
-# Optional but good practice for compatibility.
-RUN apk add --no-cache libc6-compat
-
-# Stage 2: Install dependencies
-# This stage is separated to leverage Docker's layer caching.
-# Dependencies are only re-installed if package.json or package-lock.json changes.
-FROM base AS deps
-WORKDIR /app
-
-# Copy package definition files.
 COPY package.json package-lock.json* ./
+RUN npm ci
 
-# Install project dependencies.
-RUN npm install
-
-# Stage 3: Build the application for development
-# Copy the installed dependencies and application code.
-FROM base AS runner
+# Stage 2: Build the app
+FROM node:18-alpine AS builder
 WORKDIR /app
-
-# Copy dependencies from the 'deps' stage.
 COPY --from=deps /app/node_modules ./node_modules
-# Copy the rest of the application code.
 COPY . .
+RUN npm run build
 
-# Expose the port that Next.js runs on.
+# Stage 3: Run the app with Next.js production server
+FROM node:18-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Copy built files and node_modules
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+
 EXPOSE 3000
-
-# The command to start the Next.js development server.
-# This will be run when the container starts.
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]

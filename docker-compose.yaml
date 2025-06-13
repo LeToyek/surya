@@ -41,13 +41,6 @@ services:
     ports:
       # Maps port 3000 on the host to port 3000 in the container (Next.js default port).
       - "3000:3000"
-    volumes:
-      # Mounts the local src directory into the container's src directory.
-      # This enables hot-reloading during development without rebuilding the image.
-      - ./src:/app/src
-      - .:/app
-      - /app/node_modules # Ensures node_modules are not overwritten by the host.
-      - /app/.next # Ensures the Next.js build directory is not overwritten by the host.
     depends_on:
       db: # Ensures the 'db' service is healthy before this service starts.
         condition: service_healthy

@@ -34,6 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, navItems }) => {
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
             const isSubmenuOpen = openSubmenus[item.title] ?? false;
+            const IconComponent = item.icon;
 
             return (
               <li key={item.title} className="my-1">
@@ -44,7 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, navItems }) => {
                       className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors duration-200 ${isActive ? 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                     >
                       <div className="flex items-center">
-                        <item.icon className="h-6 w-6 flex-shrink-0" />
+                        {IconComponent && <IconComponent className="h-6 w-6 flex-shrink-0" />}
                         <span className={`ml-4 font-medium transition-opacity duration-200 ${!isOpen && 'opacity-0'}`}>{item.title}</span>
                       </div>
                       <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${isSubmenuOpen ? 'rotate-180' : ''} ${!isOpen && 'hidden'}`} />
@@ -67,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, navItems }) => {
                   <Link href={item.href}
                     className={`flex items-center p-3 rounded-lg transition-colors duration-200 ${isActive ? 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                   >
-                    <item.icon className="h-6 w-6 flex-shrink-0" />
+                    {IconComponent && <IconComponent className="h-6 w-6 flex-shrink-0" />}
                     <span className={`ml-4 font-medium transition-opacity duration-200 ${!isOpen && 'opacity-0'}`}>{item.title}</span>
                   </Link>
                 )}
