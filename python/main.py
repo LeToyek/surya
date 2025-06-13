@@ -106,39 +106,45 @@ def index():
 @app.route("/upload", methods=["POST"])
 def upload_file():
     """
-    Endpoint 1: Handles the upload of a .pptx file.
-    Saves the file to the configured 'uploads' directory.
+    Endpoint: Handles the upload of a .pptx file.
+    The uploaded file will be renamed and saved as 'TEMPLATE_SALES.pptx',
+    replacing any existing file with the same name.
     """
-    # Check if a file was included in the request
     if "file" not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
 
     file = request.files["file"]
 
-    # Check if a file was actually selected
     if file.filename == "":
         return jsonify({"error": "No file selected"}), 400
 
-    # Check if the file is a valid .pptx file and save it
+    # 1. This checks if the file is a valid type (e.g., .pptx)
+    #    regardless of its original name.
     if file and allowed_file(file.filename):
-        # Use a secure filename to prevent directory traversal attacks
-        filename = secure_filename(file.filename)
+        
+        # 2. Here, we explicitly set the server-side filename. This is the
+        #    "rename" step. Any uploaded file, be it "report.pptx" or
+        #    "draft_v2.pptx", will be prepared to be saved as this name.
+        filename = "TEMPLATE_SALES.pptx"
+        
         save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        
+        # 3. The file.save() function saves the uploaded file to the 'save_path'.
+        #    If a file at that path already exists, it is automatically
+        #    overwritten. This is the "replace" step.
         file.save(save_path)
 
         return (
             jsonify(
                 {
-                    "message": "File uploaded successfully. Ready for processing.",
-                    "filename": filename,
-                    "upload_path": save_path,
+                    "message": "Template file uploaded and updated successfully.",
+                    "filename": filename
                 }
             ),
-            201,
+            200, # Using 200 OK is common for updates.
         )
     else:
         return jsonify({"error": "Invalid file type. Please upload a .pptx file."}), 400
-
 
 @app.route("/process", methods=["POST"])
 def process_file():
@@ -208,4 +214,4 @@ def process_file():
 # --- Run the App ---
 if __name__ == "__main__":
     # Make sure to run in debug mode only for development
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True)

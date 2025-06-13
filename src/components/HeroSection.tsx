@@ -1,9 +1,17 @@
-// src/components/HeroSection.tsx
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { Play } from 'lucide-react';
 
 const HeroSection: React.FC = () => {
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  
+  // Replace this with your actual YouTube video ID
+  const youtubeVideoId = "xKxrkht7CpY"; // Example ID - replace with your solar energy/education video
+  
+  const handlePlayVideo = () => {
+    setIsVideoPlaying(true);
+  };
+
   return (
     <section className="pt-16 bg-gradient-to-br from-sky-50 via-white to-blue-50 min-h-screen flex items-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -48,21 +56,44 @@ const HeroSection: React.FC = () => {
           </div>
 
           <div className="relative">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-sky-100 to-blue-100 aspect-video">
-              <div className="absolute inset-0 bg-gradient-to-br from-sky-400/20 to-blue-600/20"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <button className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-xl hover:bg-white hover:scale-110 transition-all duration-300 group">
-                  <Play className="w-8 h-8 text-sky-600 ml-1 group-hover:text-sky-700" />
-                </button>
-              </div>
-              <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-4">
-                <div className="text-sm font-semibold text-gray-800">
-                  See How Solar Powers Education
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video">
+              {!isVideoPlaying ? (
+                // Video thumbnail with play button overlay
+                <div className="relative w-full h-full">
+                  <img
+                    src={`https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`}
+                    alt="Video thumbnail"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-sky-400/20 to-blue-600/20"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <button 
+                      onClick={handlePlayVideo}
+                      className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-xl hover:bg-white hover:scale-110 transition-all duration-300 group"
+                    >
+                      <Play className="w-8 h-8 text-sky-600 ml-1 group-hover:text-sky-700" />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-4">
+                    <div className="text-sm font-semibold text-gray-800">
+                      See How Solar Powers Education
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      Watch success stories from funded schools
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  Watch success stories from funded schools
-                </div>
-              </div>
+              ) : (
+                // YouTube iframe player
+                <iframe
+                  src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0&modestbranding=1`}
+                  title="Solar Energy in Schools Video"
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                ></iframe>
+              )}
             </div>
           </div>
         </div>

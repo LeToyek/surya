@@ -1,4 +1,3 @@
-// src/app/admin/layout.tsx
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,8 +12,9 @@ import { ThemeProvider } from '../providers';
 const navItems: NavItem[] = [
   { title: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
   { title: 'Users', icon: Users, href: '/admin/users' },
-  {  title: 'Marketing', icon:Megaphone, href: '/admin/marketing',},
-  { title: 'Schools', icon: School, href: '/admin/schools', 
+  { title: 'Marketing', icon: Megaphone, href: '/admin/marketing' },
+  {
+    title: 'Schools', icon: School, href: '/admin/schools',
     children: [
       { title: 'All Schools', href: '/admin/schools' },
       { title: 'Add New', href: '/admin/schools/new' },
@@ -23,14 +23,14 @@ const navItems: NavItem[] = [
   { title: 'Settings', icon: Settings, href: '/admin/settings' },
 ];
 
-// Theme Provider and Hook for Light/Dark Mode
-const ThemeContext = React.createContext({
-  theme: 'light',
-  toggleTheme: () => {},
-});
-
-export const useTheme = () => React.useContext(ThemeContext);
-
+// Footer Component
+const Footer = () => {
+  return (
+    <footer className="p-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
+      <p>Copyright &copy; {new Date().getFullYear()} Solar by molana.my.id</p>
+    </footer>
+  );
+};
 
 
 export default function AdminLayout({
@@ -49,7 +49,7 @@ export default function AdminLayout({
       router.replace('/unauthorized');
     }
   }, [user, isLoading, router]);
-  
+
   if (isLoading || user?.role !== 'ADMIN') {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
@@ -62,7 +62,6 @@ export default function AdminLayout({
     <ThemeProvider
       attribute="class"
       defaultTheme="light"
-      enableSystem
       disableTransitionOnChange
     >
       <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
@@ -78,6 +77,8 @@ export default function AdminLayout({
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
             {children}
           </main>
+          {/* Footer has been added here */}
+          <Footer />
         </div>
       </div>
     </ThemeProvider>

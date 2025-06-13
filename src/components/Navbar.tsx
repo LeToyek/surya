@@ -45,7 +45,7 @@ const Navbar: React.FC = () => {
             {isAuthenticated ? (
               <>
                 {user?.role === 'ADMIN' && (
-                  <Link href="/admin/dashboard" className="text-red-600 hover:text-red-800 transition-colors duration-200 font-medium flex items-center">
+                  <Link href="/admin" className="text-red-600 hover:text-red-800 transition-colors duration-200 font-medium flex items-center">
                      <ShieldCheck size={18} className="mr-1" /> Admin
                   </Link>
                 )}
@@ -102,7 +102,7 @@ const Navbar: React.FC = () => {
             {isAuthenticated ? (
               <>
                  {user?.role === 'ADMIN' && (
-                  <Link href="/admin/dashboard"
+                  <Link href="/admin"
                     className="block py-2 text-red-600 hover:text-red-800 transition-colors rounded-md hover:bg-red-50 px-3 flex items-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
